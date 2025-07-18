@@ -25,12 +25,15 @@ files = [((32,32), r"/home/gabriel/Desktop/Implementando_LBM/Scale_32_32.csv"),
 
 def plot_vel_hist(vel_simu, vel_anal):
 
-    plt.figure(figsize=(6, 4))
+    plt.figure(figsize=(6, 4), dpi=300)
     plt.plot(vel_simu, marker='o', label='lbm')
-    plt.plot(vel_anal, marker='*', label='analitico')
+    plt.plot(vel_anal, marker='*', label='analítico')
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
+    plt.xlabel("Time step")
+    plt.ylabel("Relative $L_2$ error")
+    plt.title("Velocity in a single cell")
     plt.show()
 
 
@@ -71,16 +74,16 @@ for shape, file in files:
     
 
     # Error order analysis
-    time_step = time[1] - time[0]
-    t_analyzed = int(np.log(0.5) / (-visc * (2 * np.pi / L) ** 2))
-    k_analyzed = int(t_analyzed / time_step)
-    v = vel_hist[k_analyzed]
-    posX_values = np.linspace(0, L, dim_x)+ delta_h/2  # From 0 to L
-    posY_values = np.linspace(0, L, dim_y)+ delta_h/2  # From 0 to L
+    time_step   = time[1] - time[0]
+    k_analyzed  = int(np.log(0.5) / (-visc * time_step * (2 * np.pi / L) ** 2))
+    t_analyzed  = k_analyzed * time_step
+    v           = vel_hist[k_analyzed]
+    posX_values = np.arange(0, dim_x)* delta_h + delta_h/2  # From 0 to L
+    posY_values = np.arange(0, dim_y)* delta_h + delta_h/2  # From 0 to L
+    
     posX_grid, posY_grid = np.meshgrid(posX_values, posY_values)
     v_anal      = uy_analytical(t_analyzed, posX_grid, posY_grid)
-    L2_norm     = np.sqrt( np.sum( (v/u0  -v_anal/u0)**2) / (dim_x*dim_y) )
-#    L2_norm     = np.sum( np.sqrt( (v-v_anal)**2 ) ) / np.sqrt(dim_x*dim_y)  
+    L2_norm     = np.sqrt( np.mean( (v  -v_anal)**2))
     print("L2_norm: ", L2_norm)
 
     scale_error.append(L2_norm)
@@ -97,21 +100,21 @@ slope, intercept = np.polyfit(log_dim_x, log_error, 1)
 fit_error = 10**(slope * log_dim_x + intercept)
 
 # Plot data and regression
-plt.figure(figsize=(6, 4))
+plt.figure(figsize=(6, 4),dpi=300)
 plt.loglog(scale_dim_x, scale_error, 'o-', label='Measured error')
-plt.loglog(scale_dim_x, fit_error, '--', label=f'Fit: slope = {slope:.2f}')
+plt.loglog(scale_dim_x, fit_error, '--', label=f'Fit: slope = {slope:.6f}')
 plt.xlabel("Grid size (N)")
 plt.ylabel("Relative $L_2$ error")
 plt.title("Convergence plot")
 plt.grid(True, which="both", ls="--")
 plt.legend()
+for x, y in zip(scale_dim_x, scale_error):
+    text = f"Grid Size={x}\n Error={y:.3e}"
+    plt.annotate(text,
+                 xy=(x, y),
+                 xytext=(5, 5), textcoords='offset points',
+                 fontsize=8,
+                 bbox=dict(boxstyle="round,pad=0.2", edgecolor='black', facecolor='white', alpha=0.8))
+
 plt.tight_layout()
 plt.show()
-
-
-def l2(scale_index, nome, analytical_solutions, u0):
-    nome_arquivo    = f'{nome}'
-    uy_numerico     = np.loadtxt(nome_arquivo) / u0
-    uy_analitico_correspondente = analytical_solutions[scale_index]/u0
-
-    return np.sqrt(np.mean((uy_numerico - uy_analitico_correspondente)**2))
