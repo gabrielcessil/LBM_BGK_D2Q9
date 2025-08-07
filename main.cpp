@@ -196,8 +196,8 @@ public:
                 save_velocity_y_csv(filename, t_time_step*delta_t);
             }
 
-            //std::cout << compute_total_mass() << std::endl;
-            //std::cout << compute_total_momentum_x() << std::endl;
+            //std::cout << compute_total_mass() << std::endl; // DEBUG
+            //std::cout << compute_total_momentum_x() << std::endl; // DEBUG
             
             // Mesoscopic operations
             collide();
