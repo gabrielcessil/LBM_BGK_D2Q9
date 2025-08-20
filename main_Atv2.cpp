@@ -174,11 +174,22 @@ public:
                     int target_row = (prop_row - dy + dim_y) % dim_y; // Increase row is decrease y
                     double propagated_cell_val  = access_matrix(particles_prob_matrixes[prob_scheduler], dir, prop_row, prop_col);          // Get value from propagated cell
                    
-                    // Full-way bounce-back: If the target cell is solid: store particles in inverted directions
-                    if(solid_matrix[target_row][target_col] == 0.0){
-                        set_matrix(propagated_cell_val, particles_prob_matrixes[next_prop_scheduler], opp_dir[dir], target_row, target_col); // Set value into the new cell, but in opposed directions
+
+                    // Fullway bounce-back: If the target cell is solid: store particles in target node but with inverted directions
+                    //if(solid_matrix[target_row][target_col] == 0.0){
+                    //    set_matrix(propagated_cell_val, particles_prob_matrixes[next_prop_scheduler], opp_dir[dir], target_row, target_col); // Set value into the new cell, but in opposed directions
+                    //}
+                    //else set_matrix(propagated_cell_val, particles_prob_matrixes[next_prop_scheduler], dir, target_row, target_col);      // Set value into the new cell
+                    
+                    // Halfway bounce-back: If the target cell is solid: store particles in the propagated node but with inverted directions. Do not propagate solid cells content.
+                    if(solid_matrix[prop_row][prop_row] != 0.0){
+                        if(solid_matrix[target_row][target_col] == 0.0){
+                            set_matrix(propagated_cell_val, particles_prob_matrixes[next_prop_scheduler], opp_dir[dir], prop_row, prop_col);
+                        }
+                        else{
+                            set_matrix(propagated_cell_val, particles_prob_matrixes[next_prop_scheduler], dir, target_row, target_col);
+                        }
                     }
-                    else set_matrix(propagated_cell_val, particles_prob_matrixes[next_prop_scheduler], dir, target_row, target_col);      // Set value into the new cell
                 }
             }
         }
@@ -272,6 +283,9 @@ public:
 
         }
     }
+    
+
+    // AUXILIARY FUNCTIONS
 
     void save_velocity_y_csv(const std::string& filename, double time_instant) {
         std::ofstream file(filename, std::ios::app);  // Open in append mode
@@ -402,13 +416,12 @@ void initialize_solid_matrix(LBM_BGK_D2Q9& lbm) {
     }
 }
 
-void bouce_back_test(){
-    int dim_x = 4, dim_y=8;
+void bouce_back_test(int dir_selected){
+    int dim_x = 3, dim_y=5;
     LBM_BGK_D2Q9 lbm(0.8, 1, 1, dim_x, dim_y);
     initialize_solid_matrix(lbm);
     // Initializing
     
-    int dir_selected = 6;
     std::cout <<std::endl<<std::endl << "Testing Propagation of Direction: "<< dir_selected <<std::endl;
     for (int row = 0; row < dim_y; row++) {
         for (int col = 0; col < dim_x; col++) {
@@ -607,7 +620,7 @@ int main() {
 
         // Run simulation
         lbm.run(n_timesteps, outputfile_basename); 
-        //bouce_back_test();
+        //bouce_back_test(6);
 
     }
 
