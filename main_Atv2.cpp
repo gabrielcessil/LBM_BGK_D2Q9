@@ -182,7 +182,7 @@ public:
                     //else set_matrix(propagated_cell_val, particles_prob_matrixes[next_prop_scheduler], dir, target_row, target_col);      // Set value into the new cell
                     
                     // Halfway bounce-back: If the target cell is solid: store particles in the propagated node but with inverted directions. Do not propagate solid cells content.
-                    if(solid_matrix[prop_row][prop_row] != 0.0){
+                    if(solid_matrix[prop_row][prop_col] != 0.0){
                         if(solid_matrix[target_row][target_col] == 0.0){
                             set_matrix(propagated_cell_val, particles_prob_matrixes[next_prop_scheduler], opp_dir[dir], prop_row, prop_col);
                         }
