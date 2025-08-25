@@ -20,9 +20,9 @@ This project implements a 2D Lattice Boltzmann Method (LBM) solver using the Bha
 
 * **Data Export:** The code provides functionality to save simulation data to CSV files, including velocity fields (`_X.csv`, `_Y.csv`), the solid domain (`_solid.csv`), and global properties like total mass and momentum over time (`_infos.csv`).
 
-* **Initial Conditions:** The simulation is initialized with a uniform velocity field and density. The equilibrium distribution functions are set to match these initial macroscopic properties.
+* **Initial Conditions:** The simulation is initialized with a velocity field and density. By default these matrixes are set to zero or must be defined before calling `run` method. The equilibrium distribution functions are set to match these initial macroscopic properties. The class provides `initialize_velocity_field_Uniform` to initilize velocity fields with a constant.
 
-* **Force Field:** A constant acceleration field (`acc_x`) can be applied in the x-direction to drive the flow.
+* **Force Field:** A constant acceleration field (`acc_x` and `acc_y`) can be applied in the y and x-directions to drive the flow.
 
 ## Simulation Parameters
 
