@@ -8,7 +8,9 @@ This project implements a 2D Lattice Boltzmann Method (LBM) solver using the Bha
 
 * **Bhatnagar-Gross-Krook (BGK) Approximation:** Employs the BGK collision operator for simplified particle distribution relaxation.
 
-* **Dimensional Scaling:** The simulation incorporates a diffusion scaling approach, allowing for a systematic study of the method's behavior across different grid resolutions. The code includes a loop to run simulations at various scales, defined by `dim_base` and `n_scales`.
+* **Dimensional Scaling:** The class incorporates a diffusion scaling approach, named `Diffusion_Scalling` that receives:
+  - Physical length of domain, Characteristic diameter (Typically equal to length domain),  Domain size in number of nodes, Characteristic physical velocity, Physical viscosity and total physical time.
+  This allows for a systematic study of the method's behavior across different grid resolutions. Also, the code includes a loop to run simulations at various scales, defined by `dim_base` and `n_scales`. 
 
 * **Boundary Conditions:**
 
