@@ -40,11 +40,14 @@ The simulation is configured through a set of physical and simulation parameters
 
 * **Simulation:**
 
+    * `solid_matrix`: Solid cells must be set to 0.0, and void/fluid cells must be set to 1.0. By default all cells are void/fluid.
+      
     * `T_real`: Total real-time duration of the simulation.
 
     * `dim_base`: Base resolution of the grid.
 
     * `n_scales`: Number of scaling levels to test.
+  
 
 ---
 
