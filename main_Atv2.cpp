@@ -30,7 +30,7 @@ public:
     std::vector<double> weights;
     std::vector<int> opp_dir;
 
-    double fforce_x = 0, fforce_y = 0;
+    double acc_x = 0, acc_y = 0;
 
     // Constructor remains unchanged
     LBM_BGK_D2Q9(double Tau_, double spatial_step, double time_step, int dim_x_, int dim_y_)
@@ -105,7 +105,7 @@ public:
     }
     void update_momentum() {
         for (int row = 0; row < dim_y; row++) {
-            for (int col = 0; col < dim_x; col++) {
+            for (int col = 0; col < dim_x; col++){
                 if(solid_matrix[row][col] != 0.0){
                     momentum_X_matrix[row][col] = 0.0;
                     momentum_Y_matrix[row][col] = 0.0;
@@ -123,8 +123,8 @@ public:
         for (int row = 0; row < dim_y; row++) {
             for (int col = 0; col < dim_x; col++) {
                 double rho  = density_matrix[row][col];
-                double ux   = velocity_X_matrix[row][col] + Tau*fforce_x;
-                double uy   = velocity_Y_matrix[row][col] + Tau*fforce_x;
+                double ux   = velocity_X_matrix[row][col] + Tau*acc_x;
+                double uy   = velocity_Y_matrix[row][col] + Tau*acc_y;
 
                 
                 if(solid_matrix[row][col] != 0.0){
@@ -176,20 +176,20 @@ public:
                    
 
                     // Fullway bounce-back: If the target cell is solid: store particles in target node but with inverted directions
-                    //if(solid_matrix[target_row][target_col] == 0.0){
-                    //    set_matrix(propagated_cell_val, particles_prob_matrixes[next_prop_scheduler], opp_dir[dir], target_row, target_col); // Set value into the new cell, but in opposed directions
-                    //}
-                    //else set_matrix(propagated_cell_val, particles_prob_matrixes[next_prop_scheduler], dir, target_row, target_col);      // Set value into the new cell
+                    if(solid_matrix[target_row][target_col] == 0.0){
+                        set_matrix(propagated_cell_val, particles_prob_matrixes[next_prop_scheduler], opp_dir[dir], target_row, target_col); // Set value into the new cell, but in opposed directions
+                    }
+                    else set_matrix(propagated_cell_val, particles_prob_matrixes[next_prop_scheduler], dir, target_row, target_col);      // Set value into the new cell
                     
                     // Halfway bounce-back: If the target cell is solid: store particles in the propagated node but with inverted directions. Do not propagate solid cells content.
-                    if(solid_matrix[prop_row][prop_col] != 0.0){
-                        if(solid_matrix[target_row][target_col] == 0.0){
-                            set_matrix(propagated_cell_val, particles_prob_matrixes[next_prop_scheduler], opp_dir[dir], prop_row, prop_col);
-                        }
-                        else{
-                            set_matrix(propagated_cell_val, particles_prob_matrixes[next_prop_scheduler], dir, target_row, target_col);
-                        }
-                    }
+                    //if(solid_matrix[prop_row][prop_col] != 0.0){
+                    //    if(solid_matrix[target_row][target_col] == 0.0){
+                    //        set_matrix(propagated_cell_val, particles_prob_matrixes[next_prop_scheduler], opp_dir[dir], prop_row, prop_col);
+                    //    }
+                    //    else{
+                    //        set_matrix(propagated_cell_val, particles_prob_matrixes[next_prop_scheduler], dir, target_row, target_col);
+                    //    }
+                    //}
                 }
             }
         }
@@ -209,25 +209,25 @@ public:
             }
         }
     }
-    void run(int n_timesteps, const std::string& filename = "") {
 
-        // Restart the file if filename is provided
-        std::string file_x = filename+"_X"+".csv";
-        std::string file_y = filename+"_Y"+".csv";
-        std::string file_solid = filename+"_solid.csv";
-        if (!filename.empty()) {
-            std::ofstream clear_file_y(file_y, std::ios::trunc);
-            clear_file_y.close();
-
-            std::ofstream clear_file_x(file_x, std::ios::trunc);
-            clear_file_x.close();
-
-            std::ofstream clear_file_solid(file_solid, std::ios::trunc);
-            save_solid_csv(file_solid);
-            clear_file_solid.close();
+    void initilize_f(){
+        for (int row = 0; row < dim_y; row++) {
+            for (int col = 0; col < dim_x; col++) {
+                for (int i = 0; i < 9; i++) {
+                    if(solid_matrix[row][col] != 0.0){
+                        double val = access_matrix(particles_eq_matrixes, i, row, col); // Get value from propagated cell
+                        set_matrix(val, particles_prob_matrixes[prob_scheduler], i, row, col);    // Set value into the new cell
+                    }
+                    else{
+                        double val = density_matrix[row][col] * weights[i];
+                        set_matrix(val, particles_prob_matrixes[prob_scheduler], i, row, col);    // Set value into the new cell
+                    }
+                }
+               
+            }
         }
-
-        // 2. Set momentum to match initial velocity and density
+    }
+    void initilize_momentum(){
         for (int col = 0; col < dim_x; col++) {
             for (int row = 0; row < dim_y; row++) {
                 if(solid_matrix[row][col] != 0.0){
@@ -237,35 +237,52 @@ public:
                 }
             }
         }
+    }
+
+
+    void run(int n_timesteps, const std::string& filename = "", const int N_saves_percent = 5) {
+
+        // Restart the file if filename is provided
+        std::string file_x          = filename+"_X"+".csv";
+        std::string file_y          = filename+"_Y"+".csv";
+        std::string file_solid      = filename+"_solid.csv";
+        std::string file_infos       = filename+"_infos.csv";
+        if (!filename.empty()) {
+            std::ofstream clear_file_y(file_y, std::ios::trunc);
+            clear_file_y.close();
+            
+            std::ofstream clear_file_x(file_x, std::ios::trunc);
+            clear_file_x.close();
+
+            std::ofstream clear_file_solid(file_solid, std::ios::trunc);
+            save_solid_csv(file_solid);
+            clear_file_solid.close();
+
+            std::ofstream clear_file_infos(file_infos, std::ios::trunc);
+            clear_file_infos << "time, mass, momentum x, momentum y, total momentum \n"; 
+            clear_file_infos.close();
+        }
+
+        // 2. Set momentum to match initial velocity and density
+        initilize_momentum();
 
         // Initialize f_eq
         update_feq();
 
-
         // Initialize f as f_eq
-        for (int row = 0; row < dim_y; row++) {
-            for (int col = 0; col < dim_x; col++) {
-                if(solid_matrix[row][col] != 0.0){
-                    for (int i = 0; i < 9; i++) {
-                        double val = access_matrix(particles_eq_matrixes, i, row, col); // Get value from propagated cell
-                        set_matrix(val, particles_prob_matrixes[prob_scheduler], i, row, col);    // Set value into the new cell
-                    }
-                }
-            }
-        }
+        initilize_f();
 
-        // verify_momentum(); // DEBUG
-
+        // Run timesteps
         for (int t_time_step = 0; t_time_step < n_timesteps; t_time_step++) {
+
             // Save current timestep data if filename is provided
-            if (!filename.empty()) {
+            int save_interval_timesteps = n_timesteps / (100/N_saves_percent);
+            if (!filename.empty() && t_time_step % save_interval_timesteps  == 0) {
                 save_velocity_y_csv(file_y, t_time_step*delta_t);
                 save_velocity_x_csv(file_x, t_time_step*delta_t);
+                save_mass_csv(file_infos, t_time_step*delta_t);
             }
 
-            //std::cout << compute_total_mass() << std::endl; // DEBUG
-            //std::cout << compute_total_momentum_x() << std::endl; // DEBUG
-            
             // Mesoscopic operations
             collide();
             propagate();
@@ -273,14 +290,8 @@ public:
             update_density();
             update_momentum();            
             update_velocity();
-
-            // verify_momentum(); // DEBUG
-
             // Update Equilibrium state
             update_feq();
-
-
-
         }
     }
     
@@ -291,12 +302,12 @@ public:
         std::ofstream file(filename, std::ios::app);  // Open in append mode
 
         // Write time instant as first column
-        file << std::scientific << std::setprecision(6) << time_instant << ",";
+        file << std::scientific << std::setprecision(16) << time_instant << ",";
 
         // Write flattened velocity data
         for (int row = 0; row < dim_y; row++) {
             for (int col = 0; col < dim_x; col++) {
-                file << std::scientific << std::setprecision(9) << velocity_Y_matrix[row][col] * delta_h / delta_t;
+                file << std::scientific << std::setprecision(16) << velocity_Y_matrix[row][col] * delta_h / delta_t;
                 if (row != dim_y - 1 || col != dim_x - 1) {
                     file << ",";
                 }
@@ -309,12 +320,12 @@ public:
         std::ofstream file(filename, std::ios::app);  // Open in append mode
 
         // Write time instant as first column
-        file << std::scientific << std::setprecision(6) << time_instant << ",";
+        file << std::scientific << std::setprecision(16) << time_instant << ",";
 
         // Write flattened velocity data
         for (int row = 0; row < dim_y; row++) {
             for (int col = 0; col < dim_x; col++) {
-                file << std::scientific << std::setprecision(9) << velocity_X_matrix[row][col] * delta_h / delta_t;
+                file << std::scientific << std::setprecision(16) << velocity_X_matrix[row][col] * delta_h / delta_t;
                 if (row != dim_y - 1 || col != dim_x - 1) {
                     file << ",";
                 }
@@ -324,21 +335,34 @@ public:
         file.close();
     }
 
-    void save_solid_csv(const std::string& filename) {
+    void save_solid_csv(const std::string& filename, double time_instant = 0) {
         std::ofstream file(filename, std::ios::app);  // Open in append mode
 
         // Write time instant as first column
-        file << std::scientific << std::setprecision(6) << 0 << ",";
+        file << std::scientific << std::setprecision(4) << time_instant << ",";
 
         // Write flattened data
         for (int row = 0; row < dim_y; row++) {
             for (int col = 0; col < dim_x; col++) {
-                file << std::scientific << std::setprecision(9) << solid_matrix[row][col];
+                file << std::scientific << std::setprecision(4) << solid_matrix[row][col];
                 if (row != dim_y - 1 || col != dim_x - 1) {
                     file << ",";
                 }
             }
         }
+        file << "\n";
+        file.close();
+    }
+
+    void save_mass_csv(const std::string& filename, double time_instant) {
+        std::ofstream file(filename, std::ios::app);  // Open in append mode
+        // Write time instant as first column
+        double mx   = compute_total_momentum_x();
+        double my   = compute_total_momentum_y();
+        double mass = compute_total_mass();
+        file << std::scientific << std::setprecision(16) << time_instant << ",";
+        // Write  data
+        file << std::scientific << std::setprecision(16) << mass << "," << mx << "," << my << "," << mx+my;
         file << "\n";
         file.close();
     }
@@ -354,6 +378,7 @@ public:
     }
 
     void verify_momentum() {
+        // Shows that momentum is consistent with mass and velocity
         double total_yy = 0.0, total_xx = 0.0;
         for (int row = 0; row < dim_y; row++) {
             for (int col = 0; col < dim_x; col++) {
@@ -361,7 +386,6 @@ public:
                 total_yy += momentum_Y_matrix[row][col];
             }
         }
-
         double total_x = 0.0;
         double total_y = 0.0; 
         for (int col = 0; col < dim_x; col++) {
@@ -379,6 +403,15 @@ public:
         for (int row = 0; row < dim_y; row++) {
             for (int col = 0; col < dim_x; col++) {
                 total += momentum_X_matrix[row][col];
+            }
+        }
+        return total;
+    }
+    double compute_total_momentum_y() {
+        double total = 0.0;
+        for (int row = 0; row < dim_y; row++) {
+            for (int col = 0; col < dim_x; col++) {
+                total += momentum_Y_matrix[row][col];
             }
         }
         return total;
@@ -416,7 +449,7 @@ void initialize_solid_matrix(LBM_BGK_D2Q9& lbm) {
     }
 }
 
-void bouce_back_test(int dir_selected){
+void propagation_test(int dir_selected){
     int dim_x = 3, dim_y=5;
     LBM_BGK_D2Q9 lbm(0.8, 1, 1, dim_x, dim_y);
     initialize_solid_matrix(lbm);
@@ -484,83 +517,15 @@ void bouce_back_test(int dir_selected){
     }
 }
 
-void propagation_test() {
-    int dim_x = 3, dim_y=3;
-    // Create and initialize simulation
-    LBM_BGK_D2Q9 lbm(0.8, 1, 1, dim_x, dim_y);
-    for (int dir_selected = 0; dir_selected < 9; dir_selected++){
-        std::cout <<std::endl<<std::endl << "Direction "<< dir_selected <<std::endl;
-
-        for (int row = 0; row < dim_y; row++) {
-            for (int col = 0; col < dim_x; col++) {
-
-
-                for (int i = 0; i < 9; i++) {
-                    if (i == dir_selected){
-                        lbm.set_matrix((row+1)*std::pow(10,col),lbm.particles_prob_matrixes[lbm.prob_scheduler], i, row, col);
-                    }
-                    else{
-                        lbm.set_matrix(0,lbm.particles_prob_matrixes[lbm.prob_scheduler], i, row, col);
-                    }
-                }
-
-            }
-        }
-        for (int row = 0; row < dim_y; row++) {
-            for (int col = 0; col < dim_x; col++) {
-                for (int i = 0; i < 9; i++) {
-                    std::cout << lbm.access_matrix(lbm.particles_prob_matrixes[lbm.prob_scheduler], i, row, col) << ", ";
-                }
-                std::cout << " | ";
-            }
-            std::cout << std::endl;
-        }
-        lbm.propagate();
-        std::cout <<"Propagated." <<std::endl;
-
-        for (int row = 0; row < dim_y; row++) {
-            for (int col = 0; col < dim_x; col++) {
-                for (int i = 0; i < 9; i++) {
-                    std::cout << lbm.access_matrix(lbm.particles_prob_matrixes[lbm.prob_scheduler], i, row, col) << ", ";
-                }
-                std::cout << " | ";
-            }
-            std::cout << std::endl;
-        }
-        lbm.propagate();
-        std::cout <<"Propagated." <<std::endl;
-
-        for (int row = 0; row < dim_y; row++) {
-            for (int col = 0; col < dim_x; col++) {
-                for (int i = 0; i < 9; i++) {
-                    std::cout << lbm.access_matrix(lbm.particles_prob_matrixes[lbm.prob_scheduler], i, row, col) << ", ";
-                }
-                std::cout << " | ";
-            }
-            std::cout << std::endl;
-        }
-        lbm.propagate();
-        std::cout <<"Propagated." <<std::endl;
-
-        for (int row = 0; row < dim_y; row++) {
-            for (int col = 0; col < dim_x; col++) {
-                for (int i = 0; i < 9; i++) {
-                    std::cout << lbm.access_matrix(lbm.particles_prob_matrixes[lbm.prob_scheduler], i, row, col) << ", ";
-                }
-                std::cout << " | ";
-            }
-            std::cout << std::endl;
-        }
-    }
-}
 
 int main() {
     // Physical parameters
-    const double fforce_x   = 0.01; // Field force in x direction [1 mm/s /s]
+
+
     const double visc       = 1.0 * std::pow(10,-3);  // Oil visc 
     const double D          = 1.0;                    // Characteristic length [m]
     const double L          = 1.0;                    // Domain length [m]
-    const double u0         = pow(L,2)*1*fforce_x /(visc*8);                   // Characteristic velocity
+    const double u0         = 0.05;                   // Characteristic velocity
 
     std::cout << "Physical parameters: " << std::endl;
     std::cout << "visc: " << visc << std::endl;
@@ -569,9 +534,11 @@ int main() {
     std::cout << "u0: " << u0 << std::endl;
 
     // Simulation parameters
-    const double T_real     = 5000.0;       // Simulated time
-    const int dim_base      = 32;       // Base resolution (scaled in the loop)
+    const double T_real     = 1500.0;       // Simulated time
+    const int dim_base      = 16;       // Base resolution (scaled in the loop)
     const int n_scales      = 3;        // Number of scales to test
+
+    const double acc_x      = u0*visc*8/(pow(L,2)); // Field force in x direction [1 mm/s /s]
 
     std::vector<double> errors;
     std::vector<int> scales;
@@ -611,7 +578,7 @@ int main() {
 
         // Create and initialize simulation
         LBM_BGK_D2Q9 lbm(tau_star, spatial_step, time_step, dim_x, dim_y);
-        lbm.fforce_x = fforce_x  * pow(time_step,2) / spatial_step ;   // Add force in lattice units
+        lbm.acc_x = acc_x  * pow(time_step,2) / spatial_step ;   // Add force in lattice units
 
         initialize_velocity_field(lbm, u_star);
         initialize_solid_matrix(lbm);
@@ -620,7 +587,7 @@ int main() {
 
         // Run simulation
         lbm.run(n_timesteps, outputfile_basename); 
-        //bouce_back_test(6);
+        //propagation_test(6);
 
     }
 
