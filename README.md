@@ -4,7 +4,7 @@ This project implements a 2D Lattice Boltzmann Method (LBM) solver using the Bha
 
 ## Features
 
-* **Lattice Boltzmann Method (LBM):** Utilizes the D2Q9 model, which represents fluid particles on a 2D grid with nine possible directions of movement.
+* **Lattice Boltzmann Method (LBM):** Utilizes the D2Q9 model, which represents fluid particles on a 2D grid with nine possible directions of movement: center, top, bottom, left, right and main diagonals.
 
 * **Bhatnagar-Gross-Krook (BGK) Approximation:** Employs the BGK collision operator for simplified particle distribution relaxation.
 
