@@ -88,4 +88,20 @@ This graph is used to check the conservation of mass and momentum throughout the
 
 ## Usage
 
-To run the simulation, compile and execute the `main_Atv2.cpp` file. The code will automatically perform a series of simulations at different resolutions and save the output data. The Python script can then be run to analyze these results.
+Compiling and Running C++
+Use a C++ compiler like g++ to compile the source file.
+
+`g++ -std=c++11 -O3 -o lbm_solver main_Atv2.cpp`
+
+Then, execute the compiled program.
+
+`./lbm_solver`
+
+This will run the simulation and generate the necessary CSV data files in the output directory.
+
+Running Python Analysis
+Once the simulation data is generated, you can run the Python script to create the plots.
+
+`python LBM_Plotter_ATV2.py`
+
+This will read the CSV files and save the generated plots as images
