@@ -22,7 +22,7 @@ This project implements a 2D Lattice Boltzmann Method (LBM) solver using the Bha
 
 * **Initial Conditions:** The simulation is initialized with a velocity field and density. By default these matrixes are set to zero or must be defined before calling `run` method. The equilibrium distribution functions are set to match these initial macroscopic properties. The class provides `initialize_velocity_field_Uniform` to initilize velocity fields with a constant.
 
-* **Force Field:** A constant acceleration field (`acc_x` and `acc_y`) can be applied in the y and x-directions to drive the flow.
+* **Force Field:** A constant acceleration field (`acc_x` and `acc_y`) can be applied in the y and x-directions to drive the flow. By default, both are set to zero.
 
 ## Simulation Parameters
 
